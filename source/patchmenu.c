@@ -1,6 +1,7 @@
 #include "main.h"
 #include "menu.h"
 #include "message.h"
+#include "storage.h"
 #include "xenoips.h"
 #include <dirent.h>
 
@@ -29,6 +30,9 @@ void targetSelectMenu(char* patchFile)
 	Menu* m = newMenu();
 	_setHeader(m);
 	generateList(m);
+	consoleSelect(&topScreen);
+	iprintf("Select a file to patch");
+	consoleSelect(&bottomScreen);
 
 	while (1)
 	{
@@ -79,13 +83,21 @@ void targetSelectMenu(char* patchFile)
 						case INSTALL_MENU_INSTALL:
 							char resultfile[PATH_MAX];
 							sprintf(resultfile, "%s_patch", m->items[m->cursor].value);
-							char* argv[4];
-							argv[0] = "xenoips";
-							argv[1] = m->items[m->cursor].value;
-							argv[2] = resultfile;
-							argv[2] = patchFile;
-							xenoips(3, argv);
-							break;
+							iprintf("Creating target file.\n");
+							iprintf("%s\n", m->items[m->cursor].value);
+							iprintf("%s\n", patchFile);
+							//copyFile(m->items[m->cursor].value, resultfile);
+							FILE* target = fopen(m->items[m->cursor].value, "r+b");
+							FILE* ips = fopen(patchFile, "rb");
+							_ipspatch(target, ips);
+							//end
+							iprintf("\x1B[42m");	//green
+							iprintf("\nInstallation complete.\n");
+							iprintf("\x1B[47m");	//white
+							iprintf("Back - [B]\n");
+							keyWait(KEY_A | KEY_B);
+							freeMenu(m);
+							return;
 
 						case INSTALL_MENU_BACK:					
 							break;
@@ -113,6 +125,9 @@ void patchSelectMenu()
 	Menu* m = newMenu();
 	_setHeader(m);
 	generateList(m);
+	consoleSelect(&topScreen);
+	iprintf("Select a patch file");
+	consoleSelect(&bottomScreen);
 
 	while (1)
 	{
@@ -162,7 +177,8 @@ void patchSelectMenu()
 					{
 						case INSTALL_MENU_INSTALL:
 							targetSelectMenu(m->items[m->cursor].value);
-							break;
+							freeMenu(m);
+							return;
 
 						case INSTALL_MENU_BACK:					
 							break;

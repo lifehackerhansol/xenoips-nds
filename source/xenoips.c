@@ -195,29 +195,12 @@ int _ipspatch(FILE *file, FILE *ips){
 	unsigned int sizfile,sizips;
 	int ret;
 
-	if(~ftell(ips)){
-		sizips=filelength(fileno(ips));
-		pips=(u8*)malloc(sizips);
-		if(!pips){
-			iprintf("cannot allocate memory\n");return 4;
-		}
-		fread(pips,1,sizips,ips);
-	}else{ //if not file
-		sizips=0;
-		pips=NULL;
-		for(;;){
-			unsigned int readlen=fread(buf,1,BUFLEN,stdin);
-			if(!readlen)break;
-			u8 *tmp=(u8*)malloc(sizips+readlen);
-			if(!tmp){if(pips)free(pips);iprintf("cannot allocate memory\n");return 4;}
-			memcpy(tmp,pips,sizips);
-			memcpy(tmp+sizips,buf,readlen);
-			if(pips)free(pips);
-			pips=tmp,tmp=NULL;
-			sizips+=readlen;
-			if(readlen<BUFLEN)break;
-		}
+	sizips=filelength(fileno(ips));
+	pips=(u8*)malloc(sizips);
+	if(!pips){
+		iprintf("cannot allocate memory\n");return 4;
 	}
+	fread(pips,1,sizips,ips);
 
 	iprintf("(IPS %u bytes) ",sizips);
 	ret=ipspatch(NULL,&sizfile,pips,sizips);
@@ -249,59 +232,4 @@ int _ipspatch(FILE *file, FILE *ips){
 	}
 	free(pips);
 	return ret;
-}
-
-//library bootstrap
-int xenoips(int argc, char** argv){
-	int flag,ret;
-	FILE *file,*newfile=NULL,*ips;
-
-	//startup
-	if((argc<2||isatty(fileno(stdin)))&&argc<3){iprintf(
-			"XenoIPS - yet another IPS maker/patcher rev2 v2\n"
-			"Usage: xenoips file <ips\n"
-			"       xenoips file ips\n"
-			"       xenoips file newfile >ips\n"
-			"       xenoips file newfile ips\n"
-	);return 1;}
-
-	//check running mode
-	if(argc==2){
-		file=fopen(argv[1],"r+b");if(!file)goto failfile;
-		ips=stdin;
-		flag=0x00;
-	}else if(argc==3){
-		if(isatty(fileno(stdout))){
-			file=fopen(argv[1],"r+b");if(!file)goto failfile;
-			ips=fopen(argv[2],"rb");if(!ips){fclose(file);goto failfile;}
-			flag=0x01;
-		}else{
-			file=fopen(argv[1],"rb");if(!file)goto failfile;
-			newfile=fopen(argv[2],"rb");if(!newfile){fclose(file);goto failfile;}
-			ips=stdout;
-			flag=0x10;
-		}
-	}else{
-		file=fopen(argv[1],"rb");if(!file)goto failfile;
-		newfile=fopen(argv[2],"rb");if(!newfile){fclose(file);goto failfile;}
-		ips=fopen(argv[3],"wb");if(!ips){fclose(file);fclose(newfile);goto failfile;}
-		flag=0x11;
-	}
-
-	if(flag&0x10){
-		iprintf("Source: %s\nTarget: %s\n",argv[1],argv[2]);
-		ret=_ipsmake(file,newfile,ips);
-		fclose(file);fclose(newfile);
-		if(flag==0x11)fclose(ips);
-		return ret?ret|0x20:0;
-	}else{
-		iprintf("File: %s\n",argv[1]);
-		ret=_ipspatch(file,ips);
-		fclose(file);
-		if(flag==0x01)fclose(ips);
-		return ret?ret|0x10:0;
-	}
-
-failfile:
-	iprintf("Cannot open file\n");return 2;
 }

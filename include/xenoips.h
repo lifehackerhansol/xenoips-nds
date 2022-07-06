@@ -10,4 +10,3 @@ int ipsmake(const u8 *pfile, const unsigned int sizfile, const u8 *pnewfile, con
 int ipspatch(u8 *pfile, unsigned int *sizfile, const u8 *pips, const unsigned int sizips);
 int _ipsmake(FILE *file, FILE *newfile, FILE *ips);
 int _ipspatch(FILE *file, FILE *ips);
-int xenoips(int argc, char** argv);
