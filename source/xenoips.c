@@ -13,7 +13,7 @@
 
 #include "util.h"
 
-#define BUFLEN (1<<22)
+#define BUFLEN (1<<19)
 unsigned char buf[BUFLEN];
 
 #ifndef min
