@@ -132,9 +132,13 @@ int ipspatch(u8 *pfile, unsigned int *sizfile, const u8 *pips, const unsigned in
 	if(sizips<8||memcmp(pips,"PATCH",5))return 2;
 	if(!pfile)*sizfile=0;
 	while(1){
-		if(offset+3>sizips)return 1;address=read24be(pips+offset);offset+=3;
-		if(address==0x454f46&&offset==sizips)break;
-		if(offset+2>sizips)return 1;size=read16be(pips+offset);offset+=2;
+		if(offset + 3 > sizips) return 1;
+        address = read24be(pips + offset);
+        offset += 3;
+		if(address == 0x454f46 && offset == sizips) break;
+		if(offset + 2 > sizips) return 1;
+        size = read16be(pips + offset);
+        offset += 2;
 		if(size){
 			if(offset+size>sizips)return 1;
 			if(!pfile){
@@ -147,7 +151,9 @@ int ipspatch(u8 *pfile, unsigned int *sizfile, const u8 *pips, const unsigned in
 			memcpy(pfile+address,pips+offset,size);
 			offset+=size;
 		}else{
-			if(offset+3>sizips)return 1;size=read16be(pips+offset);offset+=2;
+			if(offset + 3 > sizips) return 1;
+            size = read16be(pips + offset);
+            offset += 2;
 			if(!pfile){
 				if(*sizfile<address+size)*sizfile=address+size;
 				offset++;
@@ -264,7 +270,7 @@ int xenoips(int argc, char** argv){
 			"       xenoips file ips\n"
 			"       xenoips file newfile >ips\n"
 			"       xenoips file newfile ips\n"
-	);msleep(500);return 1;}
+	);return 1;}
 
 	//check running mode
 	if(argc==2){
@@ -294,15 +300,15 @@ int xenoips(int argc, char** argv){
 		ret=_ipsmake(file,newfile,ips);
 		fclose(file);fclose(newfile);
 		if(flag==0x11)fclose(ips);
-		msleep(1000);return ret?ret|0x20:0;
+		return ret?ret|0x20:0;
 	}else{
 		fprintf(stderr,"File: %s\n",argv[1]);
 		ret=_ipspatch(file,ips);
 		fclose(file);
 		if(flag==0x01)fclose(ips);
-		msleep(1000);return ret?ret|0x10:0;
+		return ret?ret|0x10:0;
 	}
 
 failfile:
-	fprintf(stderr,"Cannot open file\n");msleep(1000);return 2;
+	fprintf(stderr,"Cannot open file\n");return 2;
 }
