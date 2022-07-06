@@ -8,7 +8,6 @@
 */
 
 #include <stdio.h>
-#include <stdlib.h>
 
 #include <nds.h>
 
@@ -17,15 +16,9 @@
 #define BUFLEN (1<<22)
 unsigned char buf[BUFLEN];
 
-int max(int num1, int num2)
-{
-    return (num1 > num2 ) ? num1 : num2;
-}
-
-int min(int num1, int num2) 
-{
-    return (num1 > num2 ) ? num2 : num1;
-}
+#ifndef min
+#define min(a,b)            (((a) < (b)) ? (a) : (b))
+#endif
 
 int RLE2(const u8 *p, const unsigned int size, const unsigned int check, unsigned int *length){ //if>8bytes, fill operation will be used.
 	int i=0,j;
@@ -44,7 +37,7 @@ void ipswrite(const u8 *p, const unsigned int address, const unsigned int _size,
 	u8 head[5];
 	unsigned int size = _size, patchofs = 0;
 	while(size) {
-		fprintf(stderr, "write 0x%06x %dbytes\n", address + patchofs, min(size, 65535));
+		iprintf("write 0x%06x %dbytes\n", address + patchofs, min(size, 65535));
 		write24be(head, address + patchofs);
 		write16be(head + 3, min(size, 65535));
 		fwrite(head, 1, 5, ips);
@@ -58,7 +51,7 @@ void ipsfill(const u8 p, const unsigned int address, const unsigned int _size, F
 	u8 head[7];
 	unsigned int size=_size,patchofs=0;
 	while(size){
-		fprintf(stderr,"fill  0x%06x %dbytes\n",address+patchofs,min(size,65535));
+		iprintf("fill  0x%06x %dbytes\n",address+patchofs,min(size,65535));
 		write24be(head,address+patchofs);
 		head[3]=head[4]=0;
 		write16be(head+5,min(size,65535));
@@ -147,7 +140,7 @@ int ipspatch(u8 *pfile, unsigned int *sizfile, const u8 *pips, const unsigned in
 				continue;
 			}
 			if(address+size>*sizfile)return 1;
-			fprintf(stderr,"write 0x%06x %dbytes\n",address,size);
+			iprintf("write 0x%06x %dbytes\n",address,size);
 			memcpy(pfile+address,pips+offset,size);
 			offset+=size;
 		}else{
@@ -160,7 +153,7 @@ int ipspatch(u8 *pfile, unsigned int *sizfile, const u8 *pips, const unsigned in
 				continue;
 			}
 			if(address+size>*sizfile)return 1;
-			fprintf(stderr,"fill  0x%06x %dbytes\n",address,size);
+			iprintf("fill  0x%06x %dbytes\n",address,size);
 			for(u=address;u<address+size;u++)pfile[u]=pips[offset];
 			offset++;
 		}
@@ -175,24 +168,24 @@ int _ipsmake(FILE *file, FILE *newfile, FILE *ips){
 	//int ret;
 
 	if((sizfile=filelength(fileno(file)))>0x1000000||(siznewfile=filelength(fileno(newfile)))>0x1000000){
-		fprintf(stderr,"file is too big(16MB)\n");return 1;
+		iprintf("file is too big(16MB)\n");return 1;
 	}
 	pfile=(u8*)malloc(sizfile);
 	pnewfile=(u8*)malloc(siznewfile);
 	if(!pfile||!pnewfile){
 		if(pfile)free(pfile);
 		if(pnewfile)free(pnewfile);
-		fprintf(stderr,"cannot allocate memory\n");return 2;
+		iprintf("cannot allocate memory\n");return 2;
 	}
 	memset(pfile,0,sizfile);
 	fread(pfile,1,sizfile,file);
 	memset(pnewfile,0,siznewfile);
 	fread(pnewfile,1,siznewfile,newfile);
 
-	fprintf(stderr,"(%u bytes / %u bytes)\n",sizfile,siznewfile);
+	iprintf("(%u bytes / %u bytes)\n",sizfile,siznewfile);
 	ipsmake(pfile,sizfile,pnewfile,siznewfile,ips);
 
-	fprintf(stderr,"Made successfully\n");
+	iprintf("Made successfully\n");
 	free(pfile);free(pnewfile);
 	return 0;
 }
@@ -206,7 +199,7 @@ int _ipspatch(FILE *file, FILE *ips){
 		sizips=filelength(fileno(ips));
 		pips=(u8*)malloc(sizips);
 		if(!pips){
-			fprintf(stderr,"cannot allocate memory\n");return 4;
+			iprintf("cannot allocate memory\n");return 4;
 		}
 		fread(pips,1,sizips,ips);
 	}else{ //if not file
@@ -216,7 +209,7 @@ int _ipspatch(FILE *file, FILE *ips){
 			unsigned int readlen=fread(buf,1,BUFLEN,stdin);
 			if(!readlen)break;
 			u8 *tmp=(u8*)malloc(sizips+readlen);
-			if(!tmp){if(pips)free(pips);fprintf(stderr,"cannot allocate memory\n");return 4;}
+			if(!tmp){if(pips)free(pips);iprintf("cannot allocate memory\n");return 4;}
 			memcpy(tmp,pips,sizips);
 			memcpy(tmp+sizips,buf,readlen);
 			if(pips)free(pips);
@@ -226,32 +219,32 @@ int _ipspatch(FILE *file, FILE *ips){
 		}
 	}
 
-	fprintf(stderr,"(IPS %u bytes) ",sizips);
+	iprintf("(IPS %u bytes) ",sizips);
 	ret=ipspatch(NULL,&sizfile,pips,sizips);
 	switch(ret){
 		case 0:
 			if(!sizfile){
 				free(pips);
-				fprintf(stderr,"ips empty\n");return 5;
+				iprintf("ips empty\n");return 5;
 			}
-			fprintf(stderr,"allocfilesize=%u\n",sizfile);
+			iprintf("allocfilesize=%u\n",sizfile);
 			pfile=(u8*)malloc(sizfile);
 			if(!pfile){
 				free(pips);
-				fprintf(stderr,"cannot allocate memory\n");return 4;
+				iprintf("cannot allocate memory\n");return 4;
 			}
 			fread(pfile,1,sizfile,file); //might occur error, but OK
 			rewind(file);
 			ipspatch(pfile,&sizfile,pips,sizips);
 			fwrite(pfile,1,sizfile,file);
 			free(pfile);
-			fprintf(stderr,"Patched successfully\n");
+			iprintf("Patched successfully\n");
 			break;
 		case 2:
-			fprintf(stderr,"\nips not valid\n");
+			iprintf("\nips not valid\n");
 			break;
 		case 1:
-			fprintf(stderr,"\nPatch failed (corrupted / truncated)\n");
+			iprintf("\nPatch failed (corrupted / truncated)\n");
 			break;
 	}
 	free(pips);
@@ -264,7 +257,7 @@ int xenoips(int argc, char** argv){
 	FILE *file,*newfile=NULL,*ips;
 
 	//startup
-	if((argc<2||isatty(fileno(stdin)))&&argc<3){fprintf(stderr,
+	if((argc<2||isatty(fileno(stdin)))&&argc<3){iprintf(
 			"XenoIPS - yet another IPS maker/patcher rev2 v2\n"
 			"Usage: xenoips file <ips\n"
 			"       xenoips file ips\n"
@@ -296,13 +289,13 @@ int xenoips(int argc, char** argv){
 	}
 
 	if(flag&0x10){
-		fprintf(stderr,"Source: %s\nTarget: %s\n",argv[1],argv[2]);
+		iprintf("Source: %s\nTarget: %s\n",argv[1],argv[2]);
 		ret=_ipsmake(file,newfile,ips);
 		fclose(file);fclose(newfile);
 		if(flag==0x11)fclose(ips);
 		return ret?ret|0x20:0;
 	}else{
-		fprintf(stderr,"File: %s\n",argv[1]);
+		iprintf("File: %s\n",argv[1]);
 		ret=_ipspatch(file,ips);
 		fclose(file);
 		if(flag==0x01)fclose(ips);
@@ -310,5 +303,5 @@ int xenoips(int argc, char** argv){
 	}
 
 failfile:
-	fprintf(stderr,"Cannot open file\n");return 2;
+	iprintf("Cannot open file\n");return 2;
 }
