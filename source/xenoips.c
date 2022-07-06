@@ -49,8 +49,8 @@ void ipswrite(const u8 *p, const unsigned int address, const unsigned int _size,
 
 void ipsfill(const u8 p, const unsigned int address, const unsigned int _size, FILE *ips){
 	u8 head[7];
-	unsigned int size=_size,patchofs=0;
-	while(size){
+	unsigned int size = _size, patchofs = 0;
+	while(size) {
 		iprintf("fill  0x%06x %dbytes\n",address+patchofs,min(size,65535));
 		write24be(head,address+patchofs);
 		head[3]=head[4]=0;
@@ -95,17 +95,17 @@ int ipsmake(const u8 *pfile, const unsigned int sizfile, const u8 *pnewfile, con
 		}
 	}
 
-	if(siznewfile>sizfile){
-		address=sizfile;
-		_size=size=siznewfile-sizfile;
-		patchofs=0;
+	if(siznewfile > sizfile){
+		address = sizfile;
+		_size = size = siznewfile - sizfile;
+		patchofs = 0;
 			while(size){
-				unsigned int rleaddr=-1,rlelength=0;
+				unsigned int rleaddr = -1, rlelength = 0;
 				//OK Let's consume the buffer (do I have to use "fill"?)
-				rleaddr=RLE2(pnewfile+address+patchofs,_size-patchofs,size>3?min(size,7):3,&rlelength);
-				if(rleaddr!=-1){
-					if(rleaddr)ipswrite(pnewfile,address+patchofs,rleaddr,ips);
-					ipsfill(pnewfile[address+patchofs+rleaddr],address+patchofs+rleaddr,rlelength,ips);
+				rleaddr = RLE2(pnewfile + address + patchofs, _size - patchofs, size > 3 ? min(size, 7) : 3 , &rlelength);
+				if(rleaddr != -1){
+					if(rleaddr) ipswrite(pnewfile, address + patchofs, rleaddr, ips);
+					ipsfill(pnewfile[address + patchofs + rleaddr], address + patchofs + rleaddr, rlelength, ips);
 					size-=rleaddr+rlelength;
 					patchofs+=rleaddr+rlelength;
 					continue;

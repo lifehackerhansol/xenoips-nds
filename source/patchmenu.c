@@ -30,92 +30,77 @@ void targetSelectMenu(char* patchFile)
 	_setHeader(m);
 	generateList(m);
 
-	//no files found
-/*	if (m->itemCount <= 0)
+	while (1)
 	{
-		clearScreen(&bottomScreen);
+		swiWaitForVBlank();
+		scanKeys();
 
-		iprintf("\x1B[31m");	//red
-		iprintf("No files found.\n");
-		iprintf("\x1B[47m");	//white
-		iprintf("\nBack - [B]\n");
-
-		keyWait(KEY_B | KEY_A | KEY_START);
-	}
-	else*/
-	{
-		while (1)
+		if (moveCursor(m))
 		{
-			swiWaitForVBlank();
-			scanKeys();
+			if (m->changePage != 0)
+				generateList(m);
 
-			if (moveCursor(m))
+			printMenu(m);
+			printItem(m);
+		}
+
+		//back
+		if (keysDown() & KEY_B)
+		{
+			char* ptr = strrchr(currentDir, '/');
+
+			if (ptr)
 			{
-				if (m->changePage != 0)
-					generateList(m);
-
+				*ptr = '\0';
+				_setHeader(m);
+				resetMenu(m);
+				generateList(m);
 				printMenu(m);
-				printItem(m);
 			}
-
-			//back
-			if (keysDown() & KEY_B)
+			else
 			{
-				char* ptr = strrchr(currentDir, '/');
+				break;
+			}
+		}
 
-				if (ptr)
+		else if (keysDown() & KEY_X)
+			break;
+
+		//selection
+		else if (keysDown() & KEY_A)
+		{
+			if (m->itemCount > 0)
+			{
+				if (m->items[m->cursor].directory == false)
 				{
-					*ptr = '\0';
-					_setHeader(m);
-					resetMenu(m);
-					generateList(m);
-					printMenu(m);
+					//nds file
+					switch (subMenu(1))
+					{
+						case INSTALL_MENU_INSTALL:
+							char resultfile[PATH_MAX];
+							sprintf(resultfile, "%s_patch", m->items[m->cursor].value);
+							char* argv[4];
+							argv[0] = "xenoips";
+							argv[1] = m->items[m->cursor].value;
+							argv[2] = resultfile;
+							argv[2] = patchFile;
+							xenoips(3, argv);
+							break;
+
+						case INSTALL_MENU_BACK:					
+							break;
+					}
 				}
 				else
 				{
-					break;
+					//directory
+					sprintf(currentDir, "%s", m->items[m->cursor].value);
+					_setHeader(m);
+					resetMenu(m);
+					generateList(m);
 				}
-			}
 
-			else if (keysDown() & KEY_X)
-				break;
-
-			//selection
-			else if (keysDown() & KEY_A)
-			{
-				if (m->itemCount > 0)
-				{
-					if (m->items[m->cursor].directory == false)
-					{
-						//nds file
-						switch (subMenu(1))
-						{
-							case INSTALL_MENU_INSTALL:
-								char* resultfile;
-								sprintf(resultfile, "%s_patch", m->items[m->cursor].value);
-								char* argv[4];
-								argv[0] = "xenoips";
-								argv[1] = m->items[m->cursor].value;
-								argv[2] = resultfile;
-								argv[2] = patchFile;
-								xenoips(3, argv);
-								break;
-
-							case INSTALL_MENU_BACK:					
-								break;
-						}
-					}
-					else
-					{
-						//directory
-						sprintf(currentDir, "%s", m->items[m->cursor].value);
-						_setHeader(m);
-						resetMenu(m);
-						generateList(m);
-					}
-
-					printMenu(m);
-				}
+				printMenu(m);
 			}
 		}
 	}
@@ -129,85 +114,70 @@ void patchSelectMenu()
 	_setHeader(m);
 	generateList(m);
 
-	//no files found
-/*	if (m->itemCount <= 0)
+	while (1)
 	{
-		clearScreen(&bottomScreen);
+		swiWaitForVBlank();
+		scanKeys();
 
-		iprintf("\x1B[31m");	//red
-		iprintf("No files found.\n");
-		iprintf("\x1B[47m");	//white
-		iprintf("\nBack - [B]\n");
-
-		keyWait(KEY_B | KEY_A | KEY_START);
-	}
-	else*/
-	{
-		while (1)
+		if (moveCursor(m))
 		{
-			swiWaitForVBlank();
-			scanKeys();
+			if (m->changePage != 0)
+				generateList(m);
 
-			if (moveCursor(m))
+			printMenu(m);
+			printItem(m);
+		}
+
+		//back
+		if (keysDown() & KEY_B)
+		{
+			char* ptr = strrchr(currentDir, '/');
+
+			if (ptr)
 			{
-				if (m->changePage != 0)
-					generateList(m);
-
+				*ptr = '\0';
+				_setHeader(m);
+				resetMenu(m);
+				generateList(m);
 				printMenu(m);
-				printItem(m);
 			}
-
-			//back
-			if (keysDown() & KEY_B)
+			else
 			{
-				char* ptr = strrchr(currentDir, '/');
+				break;
+			}
+		}
 
-				if (ptr)
+		else if (keysDown() & KEY_X)
+			break;
+
+		//selection
+		else if (keysDown() & KEY_A)
+		{
+			if (m->itemCount > 0)
+			{
+				if (m->items[m->cursor].directory == false)
 				{
-					*ptr = '\0';
-					_setHeader(m);
-					resetMenu(m);
-					generateList(m);
-					printMenu(m);
+					//nds file
+					switch (subMenu(0))
+					{
+						case INSTALL_MENU_INSTALL:
+							targetSelectMenu(m->items[m->cursor].value);
+							break;
+
+						case INSTALL_MENU_BACK:					
+							break;
+					}
 				}
 				else
 				{
-					break;
+					//directory
+					sprintf(currentDir, "%s", m->items[m->cursor].value);
+					_setHeader(m);
+					resetMenu(m);
+					generateList(m);
 				}
-			}
 
-			else if (keysDown() & KEY_X)
-				break;
-
-			//selection
-			else if (keysDown() & KEY_A)
-			{
-				if (m->itemCount > 0)
-				{
-					if (m->items[m->cursor].directory == false)
-					{
-						//nds file
-						switch (subMenu(0))
-						{
-							case INSTALL_MENU_INSTALL:
-								targetSelectMenu(m->items[m->cursor].value);
-								break;
-
-							case INSTALL_MENU_BACK:					
-								break;
-						}
-					}
-					else
-					{
-						//directory
-						sprintf(currentDir, "%s", m->items[m->cursor].value);
-						_setHeader(m);
-						resetMenu(m);
-						generateList(m);
-					}
-
-					printMenu(m);
-				}
+				printMenu(m);
 			}
 		}
 	}
