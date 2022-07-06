@@ -9,10 +9,7 @@ PrintConsole topScreen;
 PrintConsole bottomScreen;
 
 enum {
-	MAIN_MENU_INSTALL,
-	MAIN_MENU_TITLES,
-	MAIN_MENU_BACKUP,
-	MAIN_MENU_TEST,
+	MAIN_MENU_PATCH,
 	MAIN_MENU_EXIT
 };
 
@@ -48,10 +45,7 @@ static int _mainMenu(int cursor)
 	Menu* m = newMenu();
 	setMenuHeader(m, "MAIN MENU");
 
-	addMenuItem(m, "Install", NULL, 0);
-	addMenuItem(m, "Titles", NULL, 0);
-	addMenuItem(m, "Restore", NULL, 0);
-	addMenuItem(m, "Test", NULL, 0);
+	addMenuItem(m, "Patch IPS file", NULL, 0);
 	addMenuItem(m, "Shut Down", NULL, 0);
 
 	m->cursor = cursor;
@@ -82,13 +76,6 @@ int main(int argc, char **argv)
 	srand(time(0));
 	_setupScreens();
 
-	//DSi check
-	if (!isDSiMode())
-	{
-		messageBox("\x1B[31mError:\x1B[33m This app is only for DSi.");
-		return 0;
-	}
-
 	//setup sd card access
 	if (!fatInitDefault())
 	{
@@ -106,20 +93,8 @@ int main(int argc, char **argv)
 
 		switch (cursor)
 		{
-			case MAIN_MENU_INSTALL:
-				installMenu();
-				break;
-
-			case MAIN_MENU_TITLES:
-				titleMenu();
-				break;
-
-			case MAIN_MENU_BACKUP:
-				backupMenu();
-				break;
-
-			case MAIN_MENU_TEST:
-				testMenu();
+			case MAIN_MENU_PATCH:
+				patchSelectMenu();
 				break;
 
 			case MAIN_MENU_EXIT:

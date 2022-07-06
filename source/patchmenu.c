@@ -1,15 +1,11 @@
 #include "main.h"
-#include "rom.h"
-#include "install.h"
 #include "menu.h"
-#include "storage.h"
 #include "message.h"
+#include "xenoips.h"
 #include <dirent.h>
 
 enum {
 	INSTALL_MENU_INSTALL,
-	INSTALL_MENU_SYSTEM_TITLE,
-	INSTALL_MENU_DELETE,
 	INSTALL_MENU_BACK
 };
 
@@ -17,8 +13,7 @@ static char currentDir[512] = "";
 
 static void generateList(Menu* m);
 static void printItem(Menu* m);
-static int subMenu();
-static bool delete(Menu* m);
+static int subMenu(int menuNumber);
 
 static void _setHeader(Menu* m)
 {
@@ -29,7 +24,7 @@ static void _setHeader(Menu* m)
 		setMenuHeader(m, currentDir);
 }
 
-void installMenu()
+void targetSelectMenu(char* patchFile)
 {
 	Menu* m = newMenu();
 	_setHeader(m);
@@ -93,25 +88,110 @@ void installMenu()
 					if (m->items[m->cursor].directory == false)
 					{
 						//nds file
-						switch (subMenu())
+						switch (subMenu(1))
 						{
 							case INSTALL_MENU_INSTALL:
-								install(m->items[m->cursor].value, false);
-								break;
-								
-							case INSTALL_MENU_SYSTEM_TITLE:
-								install(m->items[m->cursor].value, true);
+								char* resultfile;
+								sprintf(resultfile, "%s_patch", m->items[m->cursor].value);
+								char* argv[4];
+								argv[0] = "xenoips";
+								argv[1] = m->items[m->cursor].value;
+								argv[2] = resultfile;
+								argv[2] = patchFile;
+								xenoips(3, argv);
 								break;
 
-							case INSTALL_MENU_DELETE:
-							{
-								if (delete(m))
-								{
-									resetMenu(m);
-									generateList(m);
-								}
-							}
-							break;
+							case INSTALL_MENU_BACK:					
+								break;
+						}
+					}
+					else
+					{
+						//directory
+						sprintf(currentDir, "%s", m->items[m->cursor].value);
+						_setHeader(m);
+						resetMenu(m);
+						generateList(m);
+					}
+
+					printMenu(m);
+				}
+			}
+		}
+	}
+
+	freeMenu(m);
+}
+
+void patchSelectMenu()
+{
+	Menu* m = newMenu();
+	_setHeader(m);
+	generateList(m);
+
+	//no files found
+/*	if (m->itemCount <= 0)
+	{
+		clearScreen(&bottomScreen);
+
+		iprintf("\x1B[31m");	//red
+		iprintf("No files found.\n");
+		iprintf("\x1B[47m");	//white
+		iprintf("\nBack - [B]\n");
+
+		keyWait(KEY_B | KEY_A | KEY_START);
+	}
+	else*/
+	{
+		while (1)
+		{
+			swiWaitForVBlank();
+			scanKeys();
+
+			if (moveCursor(m))
+			{
+				if (m->changePage != 0)
+					generateList(m);
+
+				printMenu(m);
+				printItem(m);
+			}
+
+			//back
+			if (keysDown() & KEY_B)
+			{
+				char* ptr = strrchr(currentDir, '/');
+
+				if (ptr)
+				{
+					*ptr = '\0';
+					_setHeader(m);
+					resetMenu(m);
+					generateList(m);
+					printMenu(m);
+				}
+				else
+				{
+					break;
+				}
+			}
+
+			else if (keysDown() & KEY_X)
+				break;
+
+			//selection
+			else if (keysDown() & KEY_A)
+			{
+				if (m->itemCount > 0)
+				{
+					if (m->items[m->cursor].directory == false)
+					{
+						//nds file
+						switch (subMenu(0))
+						{
+							case INSTALL_MENU_INSTALL:
+								targetSelectMenu(m->items[m->cursor].value);
+								break;
 
 							case INSTALL_MENU_BACK:					
 								break;
@@ -186,32 +266,22 @@ static void generateList(Menu* m)
 			}
 			else
 			{
-				if (strstr(ent->d_name, ".nds") != NULL ||
-					strstr(ent->d_name, ".app") != NULL ||
-					strstr(ent->d_name, ".dsi") != NULL ||
-					strstr(ent->d_name, ".cia") != NULL ||
-					strstr(ent->d_name, ".NDS") != NULL ||
-					strstr(ent->d_name, ".APP") != NULL ||
-					strstr(ent->d_name, ".DSI") != NULL ||
-					strstr(ent->d_name, ".CIA") != NULL)
+				if (count < m->page * ITEMS_PER_PAGE)
+					count += 1;
+				
+				else
 				{
-					if (count < m->page * ITEMS_PER_PAGE)
-						count += 1;
+					if (m->itemCount >= ITEMS_PER_PAGE)
+						done = true;
 					
 					else
 					{
-						if (m->itemCount >= ITEMS_PER_PAGE)
-							done = true;
-						
-						else
-						{
-							char* fpath = (char*)malloc(strlen(currentDir) + strlen(ent->d_name) + 8);
-							sprintf(fpath, "%s/%s", currentDir, ent->d_name);
+						char* fpath = (char*)malloc(strlen(currentDir) + strlen(ent->d_name) + 8);
+						sprintf(fpath, "%s/%s", currentDir, ent->d_name);
 
-							addMenuItem(m, ent->d_name, fpath, 0);
+						addMenuItem(m, ent->d_name, fpath, 0);
 
-							free(fpath);
-						}
+						free(fpath);
 					}
 				}
 			}
@@ -236,19 +306,15 @@ static void printItem(Menu* m)
 
 	if (m->items[m->cursor].directory)
 		clearScreen(&topScreen);
-	else
-		printRomInfo(m->items[m->cursor].value);
 }
 
-static int subMenu()
+static int subMenu(int menuNumber)
 {
 	int result = -1;
 
 	Menu* m = newMenu();
 
-	addMenuItem(m, "Install", NULL, 0);
-	addMenuItem(m, "Install as System Title", NULL, 0);
-	addMenuItem(m, "Delete", NULL, 0);
+	addMenuItem(m, menuNumber ? "Use Patch" : "Apply Patch", NULL, 0);
 	addMenuItem(m, "Back - [B]", NULL, 0);
 
 	printMenu(m);
@@ -275,46 +341,5 @@ static int subMenu()
 	}
 
 	freeMenu(m);
-	return result;
-}
-
-static bool delete(Menu* m)
-{
-	if (!m) return false;
-	
-	char* fpath = m->items[m->cursor].value;
-
-	bool result = false;
-	bool choice = NO;
-	{
-		char str[] = "Are you sure you want to delete\n";
-		char* msg = (char*)malloc(strlen(str) + strlen(fpath) + 1);
-		sprintf(msg, "%s%s", str, fpath);
-
-		choice = choiceBox(msg);
-
-		free(msg);
-	}
-
-	if (choice == YES)
-	{
-		if (!fpath)
-		{
-			messageBox("\x1B[31mCould not delete file.\x1B[47m");
-		}
-		else
-		{
-			if (remove(fpath) == 0)
-			{
-				result = true;
-				messageBox("\x1B[42mFile deleted.\x1B[47m");
-			}
-			else
-			{
-				messageBox("\x1B[31mCould not delete file.\x1B[47m");
-			}
-		}		
-	}
-
 	return result;
 }

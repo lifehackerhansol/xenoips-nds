@@ -5,10 +5,7 @@
 #include <fat.h>
 #include <stdio.h>
 
-void installMenu();
-void titleMenu();
-void backupMenu();
-void testMenu();
+void patchSelectMenu();
 
 extern PrintConsole topScreen;
 extern PrintConsole bottomScreen;
