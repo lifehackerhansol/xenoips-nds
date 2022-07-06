@@ -90,6 +90,8 @@ void targetSelectMenu(char* patchFile)
 							FILE* target = fopen(m->items[m->cursor].value, "r+b");
 							FILE* ips = fopen(patchFile, "rb");
 							_ipspatch(target, ips);
+							fclose(ips);
+							fclose(target);
 							//end
 							iprintf("\x1B[42m");	//green
 							iprintf("\nInstallation complete.\n");
