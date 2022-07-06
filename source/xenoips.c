@@ -81,7 +81,7 @@ int ipsmake(const u8 *pfile, const unsigned int sizfile, const u8 *pnewfile, con
 			//	i++;
 			//	if(pfile[i]!=pnewfile[i])gap=0,final=i+1; //if !memcmp(pfile+i,pnewfile+i,5) then break
 			//}
-			for(;memcmp_fast(pfile+final,pnewfile+final,min(5,min(sizfile,siznewfile)-final));final++)i++;
+			for(;memcmp(pfile+final,pnewfile+final,min(5,min(sizfile,siznewfile)-final));final++)i++;
 
 			_size=size=final-address;
 			patchofs=0;
