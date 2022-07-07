@@ -22,7 +22,7 @@
 #include "message.h"
 #include <time.h>
 
-#define VERSION "0.7.1"
+#define VERSION "0.0.1"
 
 PrintConsole topScreen;
 PrintConsole bottomScreen;
@@ -56,9 +56,10 @@ static int _mainMenu(int cursor)
 	//top screen
 	clearScreen(&topScreen);
 
-	iprintf("\tTitle Manager for HiyaCFW\n");
+	iprintf("\tXenoIPS for NDS\n");
 	iprintf("\nversion %s\n", VERSION);
-	iprintf("\x1b[23;0HJeff - 2018-2019");
+	iprintf("\x1b[22;0HJeff - 2018-2019");
+	iprintf("\x1b[23;0Hlifehackerhansol - 2022");
 
 	//menu
 	Menu* m = newMenu();
