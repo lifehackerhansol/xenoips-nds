@@ -25,6 +25,30 @@ static void _setHeader(Menu* m)
 		setMenuHeader(m, currentDir);
 }
 
+bool runIPSpatcher(char* targetFile, char* patchFile) {
+	clearScreen(&bottomScreen);
+	char resultFile[PATH_MAX];
+	sprintf(resultFile, "%s_patch", targetFile);
+	FILE* origin = fopen(targetFile, "rb");
+	if(getFileSize(origin) > 16777216) {
+		iprintf("File to patch is too big!\nIPS does not support >16MB\nfiles.\n");
+		return false;
+	}
+	iprintf("Patching file.\n");
+	copyFile(targetFile, resultFile);
+	FILE* target = fopen(resultFile, "r+b");
+	FILE* ips = fopen(patchFile, "rb");
+	int ret = _ipspatch(target, ips);
+	fclose(ips);
+	fclose(target);
+	switch(ret) {
+		case 0:
+			return true;
+		default:
+			return false;
+	}
+}
+
 void targetSelectMenu(char* patchFile)
 {
 	Menu* m = newMenu();
@@ -81,23 +105,17 @@ void targetSelectMenu(char* patchFile)
 					switch (subMenu(1))
 					{
 						case INSTALL_MENU_INSTALL:
-							char resultfile[PATH_MAX];
-							sprintf(resultfile, "%s_patch", m->items[m->cursor].value);
-							iprintf("Creating target file.\n");
-							iprintf("%s\n", m->items[m->cursor].value);
-							iprintf("%s\n", patchFile);
-							//copyFile(m->items[m->cursor].value, resultfile);
-							FILE* target = fopen(m->items[m->cursor].value, "r+b");
-							FILE* ips = fopen(patchFile, "rb");
-							_ipspatch(target, ips);
-							fclose(ips);
-							fclose(target);
-							//end
-							iprintf("\x1B[42m");	//green
-							iprintf("\nInstallation complete.\n");
+							if(runIPSpatcher(m->items[m->cursor].value, patchFile)) {
+								iprintf("\x1B[42m");	//green
+								iprintf("\nPatch complete.\n");
+							} else {
+								iprintf("\x1B[31m");	//red
+								iprintf("\nPatch fail.\n");
+							}
 							iprintf("\x1B[47m");	//white
 							iprintf("Back - [B]\n");
 							keyWait(KEY_A | KEY_B);
+
 							freeMenu(m);
 							return;
 
